@@ -19,24 +19,16 @@
 #include "PluginManager.h"
 #include "scheduler.h"
 
-#include "plugins/BreakoutPlugin.h"
-#include "plugins/CirclePlugin.h"
-#include "plugins/DDPPlugin.h"
 #include "plugins/DrawPlugin.h"
 #include "plugins/FireworkPlugin.h"
 #include "plugins/GameOfLifePlugin.h"
-#include "plugins/LinesPlugin.h"
-#include "plugins/PongClockPlugin.h"
 #include "plugins/RainPlugin.h"
-#include "plugins/SnakePlugin.h"
+#include "plugins/SnowPlugin.h"
 #include "plugins/StarsPlugin.h"
-#include "plugins/TickingClockPlugin.h"
-#include "plugins/ArtNet.h"
 
 #ifdef ENABLE_SERVER
-#include "plugins/AnimationPlugin.h"
-#include "plugins/BigClockPlugin.h"
 #include "plugins/ClockPlugin.h"
+#include "plugins/DatePlugin.h"
 #include "plugins/WeatherPlugin.h"
 #endif
 
@@ -146,6 +138,7 @@ void baseSetup()
   Screen.setup();
 #endif
 
+pluginManager.addPlugin(new DrawPlugin());
 // server
 #ifdef ENABLE_SERVER
   connectToWiFi();
@@ -153,30 +146,19 @@ void baseSetup()
   // set time server
   configTzTime(TZ_INFO, NTP_SERVER);
 
-  initOTA(server);
+  // initOTA(server);
   initWebsocketServer(server);
   initWebServer();
+
+  pluginManager.addPlugin(new ClockPlugin());
+  pluginManager.addPlugin(new DatePlugin());
+  pluginManager.addPlugin(new WeatherPlugin());
 #endif
-  pluginManager.addPlugin(new DrawPlugin());
-  pluginManager.addPlugin(new BreakoutPlugin());
-  pluginManager.addPlugin(new SnakePlugin());
   pluginManager.addPlugin(new GameOfLifePlugin());
   pluginManager.addPlugin(new StarsPlugin());
-  pluginManager.addPlugin(new LinesPlugin());
-  pluginManager.addPlugin(new CirclePlugin());
   pluginManager.addPlugin(new RainPlugin());
+  pluginManager.addPlugin(new SnowPlugin());
   pluginManager.addPlugin(new FireworkPlugin());
-
-#ifdef ENABLE_SERVER
-  pluginManager.addPlugin(new BigClockPlugin());
-  pluginManager.addPlugin(new ClockPlugin());
-  pluginManager.addPlugin(new PongClockPlugin());
-  pluginManager.addPlugin(new TickingClockPlugin());
-  pluginManager.addPlugin(new WeatherPlugin());
-  pluginManager.addPlugin(new AnimationPlugin());
-  pluginManager.addPlugin(new DDPPlugin());
-  pluginManager.addPlugin(new ArtNetPlugin());
-#endif
 
   pluginManager.init();
   Scheduler.init();
@@ -207,6 +189,7 @@ void setup()
                           1,
                           &screenDrawingTaskHandle,
                           0);
+  Scheduler.start();
 }
 #endif
 #ifdef ESP8266

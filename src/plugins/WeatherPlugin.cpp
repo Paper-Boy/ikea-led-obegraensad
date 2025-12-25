@@ -16,7 +16,7 @@ void WeatherPlugin::setup()
     Screen.setPixel(8, 7, 1);
     Screen.setPixel(10, 7, 1);
     Screen.setPixel(11, 7, 1);
-    this->lastUpdate = millis();
+
     this->update();
     currentStatus = NONE;
 }
@@ -31,7 +31,7 @@ void WeatherPlugin::loop()
     };
 }
 
-void WeatherPlugin::update()
+DynamicJsonDocument WeatherPlugin::readWeatherData()
 {
     String weatherApiString = "https://wttr.in/" + String(WEATHER_LOCATION) + "?format=j2&lang=en";
 #ifdef ESP32
@@ -48,77 +48,113 @@ void WeatherPlugin::update()
         DynamicJsonDocument doc(2048);
         deserializeJson(doc, http.getString());
 
-        int temperature = round(doc["current_condition"][0]["temp_C"].as<float>());
-        int weatherCode = doc["current_condition"][0]["weatherCode"].as<int>();
-        int weatherIcon = 0;
-        int iconY = 1;
-        int tempY = 10;
+        lastWeatherData = doc;
 
-        if (std::find(thunderCodes.begin(), thunderCodes.end(), weatherCode) != thunderCodes.end())
+        return doc;
+    }
+    else
+    {
+        return DynamicJsonDocument(0);
+    }
+}
+
+void WeatherPlugin::drawWeather(DynamicJsonDocument doc)
+{
+    int temperature = round(doc["current_condition"][0]["temp_C"].as<float>());
+    int weatherCode = doc["current_condition"][0]["weatherCode"].as<int>();
+    int weatherIcon = 0;
+    int iconY = 1;
+    int tempY = 10;
+
+    if (std::find(thunderCodes.begin(), thunderCodes.end(), weatherCode) != thunderCodes.end())
+    {
+        weatherIcon = 1;
+    }
+    else if (std::find(rainCodes.begin(), rainCodes.end(), weatherCode) != rainCodes.end())
+    {
+        weatherIcon = 4;
+    }
+    else if (std::find(snowCodes.begin(), snowCodes.end(), weatherCode) != snowCodes.end())
+    {
+        weatherIcon = 5;
+    }
+    else if (std::find(fogCodes.begin(), fogCodes.end(), weatherCode) != fogCodes.end())
+    {
+        weatherIcon = 6;
+        iconY = 2;
+    }
+    else if (std::find(clearCodes.begin(), clearCodes.end(), weatherCode) != clearCodes.end())
+    {
+        weatherIcon = 2;
+        iconY = 1;
+        tempY = 9;
+    }
+    else if (std::find(cloudyCodes.begin(), cloudyCodes.end(), weatherCode) != cloudyCodes.end())
+    {
+        weatherIcon = 0;
+        iconY = 2;
+        tempY = 9;
+    }
+    else if (std::find(partyCloudyCodes.begin(), partyCloudyCodes.end(), weatherCode) != partyCloudyCodes.end())
+    {
+        weatherIcon = 3;
+        iconY = 2;
+    }
+
+    Screen.lockScreen();
+
+    Screen.clear();
+    Screen.drawWeather(0, iconY, weatherIcon);
+
+    if (temperature >= 10)
+    {
+        Screen.drawCharacter(9, tempY, Screen.readBytes(degreeSymbol), 4);
+        Screen.drawNumbers(1, tempY, {(temperature - temperature % 10) / 10, temperature % 10});
+    }
+    else if (temperature <= -10)
+    {
+        Screen.drawCharacter(0, tempY, Screen.readBytes(minusSymbol), 4);
+        Screen.drawCharacter(11, tempY, Screen.readBytes(degreeSymbol), 4);
+        temperature *= -1;
+        Screen.drawNumbers(3, tempY, {(temperature - temperature % 10) / 10, temperature % 10});
+    }
+    else if (temperature >= 0)
+    {
+        Screen.drawCharacter(7, tempY, Screen.readBytes(degreeSymbol), 4);
+        Screen.drawNumbers(4, tempY, {temperature});
+    }
+    else
+    {
+        Screen.drawCharacter(0, tempY, Screen.readBytes(minusSymbol), 4);
+        Screen.drawCharacter(9, tempY, Screen.readBytes(degreeSymbol), 4);
+        Screen.drawNumbers(3, tempY, {-temperature});
+    }
+
+    Screen.unlockScreen();
+}
+
+void WeatherPlugin::update()
+{
+    if(lastWeatherData.isNull() == false) 
+    {
+        drawWeather(lastWeatherData);
+        return;
+    }
+    else
+    {     
+        DynamicJsonDocument doc = readWeatherData();
+
+        if (doc.capacity() == 0)
         {
-            weatherIcon = 1;
-        }
-        else if (std::find(rainCodes.begin(), rainCodes.end(), weatherCode) != rainCodes.end())
-        {
-            weatherIcon = 4;
-        }
-        else if (std::find(snowCodes.begin(), snowCodes.end(), weatherCode) != snowCodes.end())
-        {
-            weatherIcon = 5;
-        }
-        else if (std::find(fogCodes.begin(), fogCodes.end(), weatherCode) != fogCodes.end())
-        {
-            weatherIcon = 6;
-            iconY = 2;
-        }
-        else if (std::find(clearCodes.begin(), clearCodes.end(), weatherCode) != clearCodes.end())
-        {
-            weatherIcon = 2;
-            iconY = 1;
-            tempY = 9;
-        }
-        else if (std::find(cloudyCodes.begin(), cloudyCodes.end(), weatherCode) != cloudyCodes.end())
-        {
-            weatherIcon = 0;
-            iconY = 2;
-            tempY = 9;
-        }
-        else if (std::find(partyCloudyCodes.begin(), partyCloudyCodes.end(), weatherCode) != partyCloudyCodes.end())
-        {
-            weatherIcon = 3;
-            iconY = 2;
+            Serial.println("Failed to fetch weather data!");
+            return;
         }
 
-        Screen.clear();
-        Screen.drawWeather(0, iconY, weatherIcon, 100);
-
-        if (temperature >= 10)
-        {
-            Screen.drawCharacter(9, tempY, Screen.readBytes(degreeSymbol), 4, 50);
-            Screen.drawNumbers(1, tempY, {(temperature - temperature % 10) / 10, temperature % 10});
-        }
-        else if (temperature <= -10)
-        {
-            Screen.drawCharacter(0, tempY, Screen.readBytes(minusSymbol), 4);
-            Screen.drawCharacter(11, tempY, Screen.readBytes(degreeSymbol), 4, 50);
-            temperature *= -1;
-            Screen.drawNumbers(3, tempY, {(temperature - temperature % 10) / 10, temperature % 10});
-        }
-        else if (temperature >= 0)
-        {
-            Screen.drawCharacter(7, tempY, Screen.readBytes(degreeSymbol), 4, 50);
-            Screen.drawNumbers(4, tempY, {temperature});
-        }
-        else
-        {
-            Screen.drawCharacter(0, tempY, Screen.readBytes(minusSymbol), 4);
-            Screen.drawCharacter(9, tempY, Screen.readBytes(degreeSymbol), 4, 50);
-            Screen.drawNumbers(3, tempY, {-temperature});
-        }
+        drawWeather(doc);
     }
 }
 
 const char *WeatherPlugin::getName() const
 {
-    return "Weather";
+    return "Wetter (" WEATHER_LOCATION ")";
 }

@@ -11,6 +11,9 @@ class Screen_
 private:
   Screen_() = default;
 
+  bool locked = true;
+  bool renderRequested = false;
+
   uint8_t brightness_ = 255;
   uint8_t renderBuffer_[ROWS * COLS];
   uint8_t rotatedRenderBuffer_[ROWS * COLS];
@@ -39,6 +42,11 @@ private:
   uint8_t *getRotatedRenderBuffer();
 
 public:
+  bool lockScreen();
+  void unlockScreen();
+  bool isLocked() const;
+  void renderTask();
+
   static Screen_ &getInstance();
 
   Screen_(const Screen_ &) = delete;
@@ -72,8 +80,10 @@ public:
   void drawRectangle(int x, int y, int width, int height, bool fill, int ledStatus, uint8_t brightness = 255);
   void drawCharacter(int x, int y, std::vector<int> bits, int bitCount, uint8_t brightness = 255);
   void drawNumbers(int x, int y, std::vector<int> numbers, uint8_t brightness = 255);
+  void drawNumber(int x, int y, int number, uint8_t brightness = 255);
   void drawBigNumbers(int x, int y, std::vector<int> numbers, uint8_t brightness = 255);
   void drawWeather(int x, int y, int weather, uint8_t brightness = 255);
+  void drawCalendarLetter(int x, int y, char letter, uint8_t brightness = 255);
   std::vector<int> readBytes(std::vector<int> bytes);
 
   void scrollText(std::string text, int delayTime = 30, uint8_t brightness = 255, uint8_t fontid = 0);

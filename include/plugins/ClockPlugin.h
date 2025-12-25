@@ -9,6 +9,7 @@ private:
 
   int previousMinutes;
   int previousHour;
+  int previousSeconds;
 
 public:
   void setup() override;

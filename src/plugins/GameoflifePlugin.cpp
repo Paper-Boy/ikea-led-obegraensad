@@ -56,10 +56,12 @@ void GameOfLifePlugin::next()
   }
 }
 
-int generations = 30;
+int generations = 100;
 void GameOfLifePlugin::loop()
 {
   generations--;
+
+  Screen.lockScreen();
   this->next();
 
   for (int i = 0; i < ROWS; i++)
@@ -69,11 +71,14 @@ void GameOfLifePlugin::loop()
       Screen.setPixelAtIndex(i * COLS + j, this->buffer[i * COLS + j]);
     }
   }
-  delay(150);
+
+  Screen.unlockScreen();
+
+  delay(1000/2);
 
   if (generations == 0)
   {
-    generations = 30;
+    generations = 100;
     this->setup();
   }
 };

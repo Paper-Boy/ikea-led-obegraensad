@@ -2,6 +2,9 @@
 
 void FireworkPlugin::drawExplosion(int x, int y, int maxRadius, int brightness)
 {
+
+  Screen.lockScreen();
+
   for (int i = 0; i < 16; i++)
   {
     for (int j = 0; j < 16; j++)
@@ -13,6 +16,8 @@ void FireworkPlugin::drawExplosion(int x, int y, int maxRadius, int brightness)
       }
     }
   }
+
+  Screen.unlockScreen();
 }
 
 void FireworkPlugin::explode(int x, int y)
@@ -50,9 +55,14 @@ void FireworkPlugin::loop()
     if (currentMillis - previousMillis >= rocketDelay)
     {
       previousMillis = currentMillis;
+
+      Screen.lockScreen();
+
       Screen.clear();
       Screen.setPixel(rocketX, rocketY, 1, 255);
       rocketY--;
+
+      Screen.unlockScreen();
 
       if (rocketY < random(8))
       {
@@ -75,5 +85,5 @@ void FireworkPlugin::loop()
 
 const char *FireworkPlugin::getName() const
 {
-  return "Firework";
+  return "Feuerwerk";
 }

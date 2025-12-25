@@ -14,6 +14,8 @@ void RainPlugin::setup()
 
 void RainPlugin::loop()
 {
+  Screen.lockScreen();
+
   // dim the trail
   for (uint8_t x = 0; x < RainPlugin::X_MAX; x++)
   {
@@ -60,10 +62,12 @@ void RainPlugin::loop()
     }
   }
 
+  Screen.unlockScreen();
+
   delay(96);
 }
 
 const char *RainPlugin::getName() const
 {
-  return "Rain";
+  return "Regen";
 }

@@ -2,10 +2,28 @@
 #include <SPI.h>
 #include <algorithm>
 
-#define TIMER_INTERVAL_US 200
+#define TIMER_INTERVAL_US 300
 #define GRAY_LEVELS 64 // must be a power of two
 
 using namespace std;
+
+bool Screen_::lockScreen()
+{
+  if(this->locked)
+    return false;
+  this->locked = true;
+  return true;
+}
+
+void Screen_::unlockScreen()
+{
+  this->locked = false;
+}
+
+bool Screen_::isLocked() const
+{
+  return this->locked;
+}
 
 uint8_t Screen_::getCurrentBrightness() const
 {
@@ -147,9 +165,8 @@ void Screen_::setup()
 {
 #ifdef ENABLE_STORAGE
   storage.begin("led-wall", true);
-  setBrightness(storage.getUInt("brightness", 255));
+  Screen.setBrightness(storage.getUInt("brightness", 255));
   Screen.setCurrentRotation(storage.getUInt("rotation", 0));
-
   storage.end();
 #else
   Screen.setCurrentRotation(0);
@@ -168,7 +185,7 @@ void Screen_::setup()
 
 #ifdef ESP32
   SPI.begin(PIN_CLOCK, 34, PIN_DATA, 25); // SCLK, MISO, MOSI, SS
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
 
   hw_timer_t *Screen_timer = timerBegin(1000000);
   timerAttachInterrupt(Screen_timer, &onScreenTimer);
@@ -239,24 +256,33 @@ void Screen_::onScreenTimer()
 
 ICACHE_RAM_ATTR void Screen_::_render()
 {
+  if(this-> isLocked())
+    return;
+
   const auto buf = getRotatedRenderBuffer();
+
+  const size_t usedBytes = (ROWS * COLS + 7) / 8;
 
   // SPI data needs to be 32-bit aligned, round up before divide
   static unsigned long spi_bits[(ROWS * COLS + 8 * sizeof(unsigned long) - 1) / 8 / sizeof(unsigned long)] = {0};
   unsigned char *bits = (unsigned char *)spi_bits;
-  memset(bits, 0, ROWS * COLS / 8);
+
+  memset(bits, 0, sizeof(spi_bits));
 
   static unsigned char counter = 0;
 
   for (int idx = 0; idx < ROWS * COLS; idx++)
   {
-    bits[idx >> 3] |= (buf[positions[idx]] > counter ? 0x80 : 0) >> (idx & 7);
+    const size_t byteIndex = idx >> 3;
+    const uint8_t bitPos = idx & 7;
+    const uint8_t mask = (buf[positions[idx]] > counter) ? (0x80 >> bitPos) : 0;
+    bits[byteIndex] |= mask;
   }
 
   counter += (256 / GRAY_LEVELS);
 
   digitalWrite(PIN_LATCH, LOW);
-  SPI.writeBytes(bits, sizeof(spi_bits));
+  SPI.writeBytes(bits, usedBytes);
   digitalWrite(PIN_LATCH, HIGH);
 #ifdef ESP8266
   timer1_write(100);
@@ -347,6 +373,11 @@ void Screen_::drawNumbers(int x, int y, std::vector<int> numbers, uint8_t bright
   }
 }
 
+void Screen_::drawNumber(int x, int y, int number, uint8_t brightness)
+{
+  drawCharacter(x, y, readBytes(smallNumbers[number]), 4, brightness);
+}
+
 void Screen_::drawBigNumbers(int x, int y, std::vector<int> numbers, uint8_t brightness)
 {
   for (int i = 0; i < numbers.size(); i++)
@@ -358,6 +389,14 @@ void Screen_::drawBigNumbers(int x, int y, std::vector<int> numbers, uint8_t bri
 void Screen_::drawWeather(int x, int y, int weather, uint8_t brightness)
 {
   drawCharacter(x, y, readBytes(weatherIcons[weather]), 16, brightness);
+}
+
+void Screen_::drawCalendarLetter(int x, int y, char letter, uint8_t brightness)
+{
+  if (letter >= 'A' && letter <= 'Z')
+  {
+    drawCharacter(x, y, readBytes(calendarLetters[letter - 'A']), 8, brightness);
+  }
 }
 
 void Screen_::scrollText(std::string text, int delayTime, uint8_t brightness, uint8_t fontid)

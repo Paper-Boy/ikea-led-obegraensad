@@ -10,10 +10,13 @@
 #endif
 #include <ArduinoJson.h>
 #include "PluginManager.h"
+
 class WeatherPlugin : public Plugin
 {
 private:
   unsigned long lastUpdate = 0;
+  DynamicJsonDocument lastWeatherData{2048};
+
   HTTPClient http;
 
   std::vector<int> thunderCodes = {200, 386, 389, 392, 395};
@@ -30,6 +33,9 @@ private:
       179, 227, 323, 326, 329,
       332, 335, 338, 368, 371,
       392, 395, 230, 350};
+
+  DynamicJsonDocument readWeatherData();
+  void drawWeather(DynamicJsonDocument doc);
 
 public:
   void update();

@@ -8,7 +8,7 @@
 #define PIN_DATA 27
 #define PIN_CLOCK 14
 #define PIN_LATCH 12
-#define PIN_BUTTON 16
+#define PIN_BUTTON 13
 #endif
 
 #ifdef ESP8266
@@ -19,6 +19,7 @@
 #define PIN_BUTTON 2
 #endif
 
+
 // disable if you do not want to use the internal storage
 // https://randomnerdtutorials.com/esp32-save-data-permanently-preferences/
 // timer1 on esp8266 is not compatible with flash file system reads
@@ -28,18 +29,19 @@
 
 #ifdef ENABLE_SERVER
 // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.json
-#define NTP_SERVER "de.pool.ntp.org"
-#define TZ_INFO "CET-1CEST,M3.5.0,M10.5.0/3"
+// #define NTP_SERVER "de.pool.ntp.org"
+#define NTP_SERVER "fritz.box"
+#define TZ_INFO "CET-1CEST,M3.5.0,M10.5.0/3" // Europe/Berlin
 #endif
 
 #define COLS 16
 #define ROWS 16
 
 // set your city or coords (https://github.com/chubin/wttr.in)
-#define WEATHER_LOCATION "Hamburg"
+#define WEATHER_LOCATION "Duisburg"
 
 // name of WiFi created by the device if no known WiFi is available
-#define WIFI_MANAGER_SSID "IKEA"
+#define WIFI_MANAGER_SSID "LED"
 
 // use ALL of the following to use static IP config
 /*

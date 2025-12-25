@@ -3,6 +3,9 @@
 void DrawPlugin::setup()
 {
   delay(50);
+
+  Screen.lockScreen();
+
   Screen.clear();
   if (Screen.isCacheEmpty())
   {
@@ -12,6 +15,9 @@ void DrawPlugin::setup()
   {
     Screen.restoreCache();
   }
+
+  Screen.unlockScreen();
+
 #ifdef ENABLE_SERVER
   sendInfo();
 #endif
@@ -62,5 +68,5 @@ void DrawPlugin::websocketHook(DynamicJsonDocument &request)
 
 const char *DrawPlugin::getName() const
 {
-  return "Draw";
+  return "Zeichnen";
 }

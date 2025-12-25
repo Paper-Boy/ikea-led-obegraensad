@@ -12,6 +12,7 @@ extern std::vector<int> minusSymbol;
 
 extern std::vector<std::vector<int>> circleAnimation;
 extern std::vector<std::vector<int>> smallNumbers;
+extern std::vector<std::vector<int>> calendarLetters;
 extern std::vector<std::vector<int>> bigNumbers;
 extern std::vector<std::vector<int>> lineAnimation;
 extern std::vector<std::vector<int>> weatherIcons;

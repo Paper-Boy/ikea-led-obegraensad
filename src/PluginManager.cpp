@@ -30,15 +30,9 @@ void PluginManager::init()
 void PluginManager::activatePersistedPlugin()
 {
     std::vector<Plugin *> &allPlugins = pluginManager.getAllPlugins();
-#ifdef ENABLE_STORAGE
-    storage.begin("led-wall", true);
-    persistedPluginId = storage.getInt("current-plugin", allPlugins.at(0)->getId());
-    pluginManager.setActivePluginById(persistedPluginId);
-    storage.end();
-#endif
     if (!activePlugin)
     {
-        pluginManager.setActivePluginById(allPlugins.at(0)->getId());
+        pluginManager.setActivePluginById(allPlugins.at(1)->getId());
     }
 }
 
