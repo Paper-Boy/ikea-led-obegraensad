@@ -8,6 +8,7 @@ WiFiClient wiFiClient;
 void WeatherPlugin::setup()
 {
     // loading screen
+    Screen.lockScreen();
     Screen.clear();
     currentStatus = LOADING;
     Screen.setPixel(4, 7, 1);
@@ -16,53 +17,70 @@ void WeatherPlugin::setup()
     Screen.setPixel(8, 7, 1);
     Screen.setPixel(10, 7, 1);
     Screen.setPixel(11, 7, 1);
-
+    Screen.unlockScreen();
     this->update();
     currentStatus = NONE;
 }
 
 void WeatherPlugin::loop()
 {
-    if (millis() >= this->lastUpdate + (1000 * 60 * 30))
+    if (millis() >= this->lastUpdate + (1000 * 60 * 10)) // update every 10 minutes
     {
         this->update();
         this->lastUpdate = millis();
         Serial.println("updating weather");
-    };
+    }
 }
 
-DynamicJsonDocument WeatherPlugin::readWeatherData()
+bool WeatherPlugin::readWeatherDataDWD()
 {
-    String weatherApiString = "https://wttr.in/" + String(WEATHER_LOCATION) + "?format=j2&lang=en";
+    if(getLocalTime(&timeinfo) == false)
+    {
+        Serial.println("Failed to obtain time");
+        return false;
+    }
+    int index = timeinfo.tm_hour;
+
 #ifdef ESP32
-    http.begin(weatherApiString);
+    http.begin(weatherAPIString + stationID);
 #endif
 #ifdef ESP8266
-    http.begin(wiFiClient, weatherApiString);
+    http.begin(wiFiClient, weatherAPIString + stationID);
 #endif
-
     int code = http.GET();
 
     if (code == HTTP_CODE_OK)
     {
-        DynamicJsonDocument doc(2048);
+        DynamicJsonDocument doc(20480);
         deserializeJson(doc, http.getString());
 
-        lastWeatherData = doc;
-
-        return doc;
+        lastTemperature = round(doc[stationID]["forecast1"]["temperature"][index].as<float>()/10);
+        lastWeatherCode = doc[stationID]["forecast1"]["icon"][index].as<int>();
     }
     else
     {
-        return DynamicJsonDocument(0);
+        Serial.println("HTTP request failed with code: " + String(code));
+        http.end();
+        return false;
     }
+
+    http.end();
+    return true;
 }
 
-void WeatherPlugin::drawWeather(DynamicJsonDocument doc)
+void WeatherPlugin::drawWeatherDWD()
 {
-    int temperature = round(doc["current_condition"][0]["temp_C"].as<float>());
-    int weatherCode = doc["current_condition"][0]["weatherCode"].as<int>();
-    int weatherIcon = 0;
+    if(lastTemperature == -1 || lastWeatherCode == -1) 
+    {
+        Serial.println("No weather data to draw");
+        return;
+    }
+
+    int temperature = lastTemperature;
+    int weatherCode = lastWeatherCode;
+
+    // Fallback values if no icon can be found
+    int weatherIcon = 7;
     int iconY = 1;
     int tempY = 10;
 
@@ -95,7 +113,7 @@ void WeatherPlugin::drawWeather(DynamicJsonDocument doc)
         iconY = 2;
         tempY = 9;
     }
-    else if (std::find(partyCloudyCodes.begin(), partyCloudyCodes.end(), weatherCode) != partyCloudyCodes.end())
+    else if (std::find(partlyCloudyCodes.begin(), partlyCloudyCodes.end(), weatherCode) != partlyCloudyCodes.end())
     {
         weatherIcon = 3;
         iconY = 2;
@@ -135,23 +153,16 @@ void WeatherPlugin::drawWeather(DynamicJsonDocument doc)
 
 void WeatherPlugin::update()
 {
-    if(lastWeatherData.isNull() == false) 
+    if(lastTemperature == -1 || lastWeatherCode == -1) 
     {
-        drawWeather(lastWeatherData);
-        return;
-    }
-    else
-    {     
-        DynamicJsonDocument doc = readWeatherData();
-
-        if (doc.capacity() == 0)
+        if(!readWeatherDataDWD())
         {
-            Serial.println("Failed to fetch weather data!");
+            Serial.println("Failed to read weather data");
             return;
         }
-
-        drawWeather(doc);
     }
+
+    drawWeatherDWD();
 }
 
 const char *WeatherPlugin::getName() const

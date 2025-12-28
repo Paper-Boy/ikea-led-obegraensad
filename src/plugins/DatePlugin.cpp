@@ -2,25 +2,23 @@
 
 void DatePlugin::setup()
 {
-  // loading screen
-  Screen.setPixel(4, 7, 1);
-  Screen.setPixel(5, 7, 1);
-  Screen.setPixel(7, 7, 1);
-  Screen.setPixel(8, 7, 1);
-  Screen.setPixel(10, 7, 1);
-  Screen.setPixel(11, 7, 1);
-
+  if(firstTime)
+  {
+    // loading screen
+    Screen.lockScreen();
+    Screen.clear();
+    Screen.setPixel(4, 7, 1);
+    Screen.setPixel(5, 7, 1);
+    Screen.setPixel(7, 7, 1);
+    Screen.setPixel(8, 7, 1);
+    Screen.setPixel(10, 7, 1);
+    Screen.setPixel(11, 7, 1);
+    Screen.unlockScreen();
+  }
   previousDay = -1;
   previousMonth = -1;
-
-  // this->lastUpdate = millis();
+  firstTime = false;
 }
-
-/*
-Screen.drawCalendarLetter(0, 1, 'N', 255);
-Screen.drawCalendarLetter(5, 6, 'O', 255);
-Screen.drawCalendarLetter(10, 11, 'V', 255);  
-*/
 
 void DatePlugin::loop()
 {
@@ -48,27 +46,31 @@ void DatePlugin::loop()
       Screen.clear();
       
       Screen.drawNumbers(2, 2, day);
-      Screen.drawNumbers(2, 9, month); 
-      /*Screen.drawCalendarLetter(0, 1, monthLetters[counter][0], 255);
-      Screen.drawCalendarLetter(5, 6, monthLetters[counter][1], 255);
-      Screen.drawCalendarLetter(10, 11, monthLetters[counter][2], 255);*/
+      Screen.drawNumbers(2, 9, month);
 
 
       Screen.setPixel(12, 6, 1);
       Screen.setPixel(12, 13, 1);
 
       Screen.unlockScreen();
-
-      /*lastUpdate = millis();
-      counter++;
-      if(counter >= monthLetters.size())
-      {
-        counter = 0;
-      }*/
     }
 
     previousDay = timeinfo.tm_mday;
     previousMonth = timeinfo.tm_mon;
+  }
+  else
+  {
+    Serial.println("Failed to obtain time");
+    // loading screen
+    Screen.lockScreen();
+    Screen.clear();
+    Screen.setPixel(4, 7, 1);
+    Screen.setPixel(5, 7, 1);
+    Screen.setPixel(7, 7, 1);
+    Screen.setPixel(8, 7, 1);
+    Screen.setPixel(10, 7, 1);
+    Screen.setPixel(11, 7, 1);
+    Screen.unlockScreen();
   }
   delay(16);
 }

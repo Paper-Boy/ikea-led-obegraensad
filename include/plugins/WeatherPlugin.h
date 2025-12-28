@@ -15,27 +15,25 @@ class WeatherPlugin : public Plugin
 {
 private:
   unsigned long lastUpdate = 0;
-  DynamicJsonDocument lastWeatherData{2048};
+  int lastTemperature = -1;
+  int lastWeatherCode = -1;
+  struct tm timeinfo;
+
+  String weatherAPIString = "https://dwd.api.proxy.bund.dev/v30/stationOverviewExtended?stationIds=";
+  String stationID = "H419";
 
   HTTPClient http;
 
-  std::vector<int> thunderCodes = {200, 386, 389, 392, 395};
-  std::vector<int> cloudyCodes = {119, 122};
-  std::vector<int> partyCloudyCodes = {116};
-  std::vector<int> clearCodes = {113};
-  std::vector<int> fogCodes = {143, 248, 260};
-  std::vector<int> rainCodes = {
-      176, 293, 296, 299, 302,
-      305, 308, 311, 314, 353,
-      356, 359, 386, 389, 263,
-      266, 281, 284, 185};
-  std::vector<int> snowCodes = {
-      179, 227, 323, 326, 329,
-      332, 335, 338, 368, 371,
-      392, 395, 230, 350};
+  std::vector<int> thunderCodes = {-1};
+  std::vector<int> cloudyCodes = {4};
+  std::vector<int> partlyCloudyCodes = {2, 3};
+  std::vector<int> clearCodes = {1};     // 32767 = fallback for "unknown" sky
+  std::vector<int> fogCodes = {5};
+  std::vector<int> rainCodes = {7, 12, 18, 19};
+  std::vector<int> snowCodes = {14};
 
-  DynamicJsonDocument readWeatherData();
-  void drawWeather(DynamicJsonDocument doc);
+  bool readWeatherDataDWD();
+  void drawWeatherDWD();
 
 public:
   void update();

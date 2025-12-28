@@ -5,6 +5,8 @@
 class ClockPlugin : public Plugin
 {
 private:
+  bool firstTime = true;
+
   struct tm timeinfo;
 
   int previousMinutes;

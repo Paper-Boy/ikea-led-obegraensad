@@ -119,7 +119,7 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern)
   case BfButton::LONG_PRESS:
     if (currentStatus != LOADING)
     {
-      pluginManager.activatePersistedPlugin();
+      Scheduler.start();
     }
     break;
   }
