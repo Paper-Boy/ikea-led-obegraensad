@@ -7,10 +7,11 @@ WiFiClient wiFiClient;
 
 void WeatherPlugin::setup()
 {
+    currentStatus = LOADING;
+    
     // loading screen
     Screen.lockScreen();
     Screen.clear();
-    currentStatus = LOADING;
     Screen.setPixel(4, 7, 1);
     Screen.setPixel(5, 7, 1);
     Screen.setPixel(7, 7, 1);
@@ -18,7 +19,10 @@ void WeatherPlugin::setup()
     Screen.setPixel(10, 7, 1);
     Screen.setPixel(11, 7, 1);
     Screen.unlockScreen();
+    
+    this->drawWeatherDWD();
     this->update();
+    
     currentStatus = NONE;
 }
 
@@ -153,13 +157,10 @@ void WeatherPlugin::drawWeatherDWD()
 
 void WeatherPlugin::update()
 {
-    if(lastTemperature == -1 || lastWeatherCode == -1) 
+    if(!readWeatherDataDWD())
     {
-        if(!readWeatherDataDWD())
-        {
-            Serial.println("Failed to read weather data");
-            return;
-        }
+        Serial.println("Failed to read weather data");
+        return;
     }
 
     drawWeatherDWD();
@@ -169,3 +170,4 @@ const char *WeatherPlugin::getName() const
 {
     return "Wetter (" WEATHER_LOCATION ")";
 }
+
