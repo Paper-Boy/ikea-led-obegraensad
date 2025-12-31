@@ -9,7 +9,7 @@ unsigned long ota_progress_millis = 0;
 
 void onOTAStart()
 {
-    // Log when OTA has started
+    // Log when OTA has started and draw 'U' on screen
     Serial.println("OTA update started!");
     currentStatus = UPDATE;
 
@@ -33,7 +33,7 @@ void onOTAProgress(size_t current, size_t final)
 
 void onOTAEnd(bool success)
 {
-    // Log when OTA has finished
+    // Log when OTA has finished and draw 'R' on screen
     if (success)
     {
         Serial.println("OTA update finished successfully!");
@@ -42,6 +42,7 @@ void onOTAEnd(bool success)
     {
         Serial.println("There was an error during OTA update!");
     }
+
     std::vector<int> bits = Screen.readBytes(letterR);
 
     for (int i = 0; i < bits.size(); i++)
@@ -56,8 +57,10 @@ void onOTAEnd(bool success)
 
 void initOTA(AsyncWebServer &server)
 {
-    ElegantOTA.begin(&server); // Start ElegantOTA
+    // Start ElegantOTA
+    ElegantOTA.begin(&server);
     ElegantOTA.setAuth(otaUser, otaPassword);
+
     // ElegantOTA callbacks
     ElegantOTA.onStart(onOTAStart);
     ElegantOTA.onProgress(onOTAProgress);

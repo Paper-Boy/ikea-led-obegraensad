@@ -238,11 +238,6 @@ void loop()
   if (currentStatus == NONE)
   {
     Scheduler.update();
-
-    if ((taskCounter % 4) == 0)
-    {
-      Messages.scrollMessageEveryMinute();
-    }
   }
 
   if ((taskCounter % 16) == 0)

@@ -19,6 +19,8 @@ private:
   int lastWeatherCode = -1;
   struct tm timeinfo;
 
+  StaticJsonDocument<128> filter;
+
   String weatherAPIString = "https://dwd.api.proxy.bund.dev/v30/stationOverviewExtended?stationIds=";
   String stationID = "H419";
 

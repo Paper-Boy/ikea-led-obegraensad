@@ -2,7 +2,6 @@
 
 #define UPDATE_INTERVAL_MINUTES 10
 
-// https://github.com/chubin/wttr.in/blob/master/share/translations/en.txt
 #ifdef ESP8266
 WiFiClient wiFiClient;
 #endif
@@ -22,6 +21,9 @@ void WeatherPlugin::setup()
     Screen.setPixel(11, 7, 1);
     Screen.unlockScreen();
     
+    this->filter[stationID]["forecast1"]["temperature"] = true;
+    this->filter[stationID]["forecast1"]["icon"] = true;
+
     if(lastTemperature != -1 && lastWeatherCode != -1)
     {
         this->drawWeatherDWD();
@@ -36,13 +38,13 @@ void WeatherPlugin::setup()
 
 void WeatherPlugin::loop()
 {
-    if((lastTemperature != -1 || lastWeatherCode != -1) && millis() < this->lastUpdate + (1000 * 20)) // Update every 20 seconds, when no weather data is stored
+    if((lastTemperature == -1 || lastWeatherCode == -1) && (millis() < this->lastUpdate + (1000 * 20))) // Update every 20 seconds, when no weather data is stored
     {
         Serial.println("updating weather");
         this->update();
         this->lastUpdate = millis();
     }
-    else if (millis() >= this->lastUpdate + (1000 * 60 * UPDATE_INTERVAL_MINUTES)) // update every 10 minutes
+    else if (millis() >= this->lastUpdate + (1000 * 60 * UPDATE_INTERVAL_MINUTES)) // update every x minutes, defined by UPDATE_INTERVAL_MINUTES
     {
         Serial.println("updating weather");
         this->update();
@@ -70,39 +72,28 @@ bool WeatherPlugin::readWeatherDataDWD()
 
     if (code == HTTP_CODE_OK)
     {
-        DynamicJsonDocument doc(20480);
-
+        DynamicJsonDocument doc(10240);
         DeserializationError err;
 
         String payload = http.getString();
-        err = deserializeJson(doc, payload);
+
+        err = deserializeJson(doc, payload, DeserializationOption::Filter(this->filter));
 
         http.end();
 
         if (err)
         {
             Serial.print(F("deserializeJson() error: "));
-            Serial.println(err.f_str());
-        }
-
-        // Validate JSON structure and array bounds before accessing
-        if (!doc.containsKey(stationID) || !doc[stationID].containsKey("forecast1") ||
-            !doc[stationID]["forecast1"].containsKey("temperature") || !doc[stationID]["forecast1"].containsKey("icon"))
-        {
-            Serial.println("Missing expected keys in JSON response");
-            return false;
+            Serial.print(err.f_str());
         }
 
         JsonArray temps = doc[stationID]["forecast1"]["temperature"].as<JsonArray>();
         JsonArray icons = doc[stationID]["forecast1"]["icon"].as<JsonArray>();
-        if (index < 0 || index >= (int)temps.size() || index >= (int)icons.size())
-        {
-            Serial.println("JSON arrays shorter than expected or index out of range");
-            return false;
-        }
 
         lastTemperature = round(temps[index].as<float>() / 10.0f);
         lastWeatherCode = icons[index].as<int>();
+        
+        Serial.println("Temperature: " + String(lastTemperature) + "°C, Weather Code: " + String(lastWeatherCode));
 
         return true;
     }
