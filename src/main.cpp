@@ -146,7 +146,7 @@ pluginManager.addPlugin(new DrawPlugin());
   // set time server
   configTzTime(TZ_INFO, NTP_SERVER);
 
-  // initOTA(server);
+  initOTA(server);
   initWebsocketServer(server);
   initWebServer();
 
@@ -164,6 +164,8 @@ pluginManager.addPlugin(new DrawPlugin());
   Scheduler.init();
 
   btn.onPress(pressHandler).onDoublePress(pressHandler).onPressFor(pressHandler, 1000);
+
+  Serial.println("Setup complete");
 }
 
 #ifdef ESP32
@@ -172,9 +174,21 @@ TaskHandle_t screenDrawingTaskHandle = NULL;
 void screenDrawingTask(void *parameter)
 {
   Screen.setup();
+
+  int counter = 1000;
+
   for (;;)
   {
     pluginManager.runActivePlugin();
+
+    if(counter <= 0) 
+    {
+      Serial.print("Current Stack High Water Mark (bytes): "); 
+      Serial.println(uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t));
+      counter = 1000;
+    }
+    counter--;
+
     vTaskDelay(10);
   }
 }
@@ -184,11 +198,11 @@ void setup()
   baseSetup();
   xTaskCreatePinnedToCore(screenDrawingTask,
                           "screenDrawingTask",
-                          10000,
+                          15000,
                           NULL,
                           1,
                           &screenDrawingTaskHandle,
-                          0);
+                          tskNO_AFFINITY);
   Scheduler.start();
 }
 #endif
